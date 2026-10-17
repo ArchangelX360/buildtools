@@ -243,5 +243,35 @@ load("location", "symbol")
 			`:12: The "$(location)" and "$(locations)" make variables are deprecated. Use "$(execpath ...)" or "$(rootpath ...)" instead.`,
 			`:19: The "$(location)" and "$(locations)" make variables are deprecated. Use "$(execpath ...)" or "$(rootpath ...)" instead.`,
 		},
-		scopeBuild)
+		scopeBuild | scopeBzl)
+	checkFindings(t, "make-location", `
+load("location", "symbol")
+def generate_targets(name, src1, src2):
+    native.genrule(
+        name = name + "a",
+        srcs = [src1],
+        outs = ["out"],
+        cmd = "cp $(location " + src1 + ") $@",
+    )
+
+    native.genrule(
+        name = name + "b",
+        srcs = [src1, src2],
+        outs = ["out"],
+        cmd = "cat $(locations " + src1 + " " + src2 + ") > $@",
+    )
+
+    native.genrule(
+        name = name + "c",
+        srcs = [src1],
+        outs = ["out"],
+        cmd = "cp $$(location " + src1 + ") $$@",
+    )
+`,
+		[]string{
+			`:7: The "$(location)" and "$(locations)" make variables are deprecated. Use "$(execpath ...)" or "$(rootpath ...)" instead.`,
+			`:14: The "$(location)" and "$(locations)" make variables are deprecated. Use "$(execpath ...)" or "$(rootpath ...)" instead.`,
+			`:21: The "$(location)" and "$(locations)" make variables are deprecated. Use "$(execpath ...)" or "$(rootpath ...)" instead.`,
+		},
+		scopeBuild | scopeBzl)
 }
