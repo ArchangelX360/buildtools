@@ -186,3 +186,55 @@ func TestExpandDirectoriesExcludesRelativeToTheWorkspaceRoot(t *testing.T) {
 		t.Errorf("ExpandDirectories() = %q, want %q", files, want)
 	}
 }
+
+func TestExpandDirectoriesMatchesSequentialWalk(t *testing.T) {
+	root := t.TempDir()
+	files := map[string]string{"MODULE.bazel": "", "a.bzl": "", "a0.bzl": "", "z/BUILD": "", ".git/x.bzl": "", "README": ""}
+	for _, dir := range []string{"a", "a/b", "a-c", "a/b/c", "b", "b.d"} {
+		for _, name := range []string{"BUILD", "defs.bzl", "x.star", "notes.txt"} {
+			files[dir+"/"+name] = ""
+		}
+	}
+	writeFiles(t, root, files)
+	if runtime.GOOS != "windows" {
+		if err := os.Symlink(filepath.Join(root, "a.bzl"), filepath.Join(root, "link.bzl")); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(filepath.Join(root, "a"), filepath.Join(root, "dir.bzl")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(root)
+
+	// The files and the order of filepath.Walk, which buildifier used before.
+	var want []string
+	err := filepath.Walk(".", func(filename string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && info.Name() == ".git" {
+			return filepath.SkipDir
+		}
+		if !info.IsDir() && isStarlarkFile(info.Name()) {
+			if info.Mode()&os.ModeSymlink != 0 {
+				if stat, err := os.Stat(filename); err != nil || stat.IsDir() {
+					return nil
+				}
+			}
+			want = append(want, filename)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{"."}
+	got, err := ExpandDirectories(&args, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ExpandDirectories() = %q, want %q", got, want)
+	}
+}
