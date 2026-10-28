@@ -379,7 +379,8 @@ cat > golden/.buildifier.example.json <<EOF
     "unreachable",
     "unsorted-dict-items",
     "unused-variable"
-  ]
+  ],
+  "respectBazelignore": true
 }
 EOF
 
