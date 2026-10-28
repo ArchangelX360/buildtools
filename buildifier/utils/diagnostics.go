@@ -31,7 +31,7 @@ type Diagnostics struct {
 	Files   []*FileDiagnostics `json:"files"`   // diagnostics per file
 }
 
-// Format formats a Diagnostics object either as plain text or as json
+// Format formats a Diagnostics object either as plain text, json or sarif
 func (d *Diagnostics) Format(format string, verbose bool) string {
 	switch format {
 	case "text", "":
@@ -62,6 +62,8 @@ func (d *Diagnostics) Format(format string, verbose bool) string {
 			result, _ = json.Marshal(*d)
 		}
 		return string(result) + "\n"
+	case "sarif":
+		return d.formatSarif(verbose)
 	}
 	return ""
 }

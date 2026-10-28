@@ -160,7 +160,7 @@ func ExampleFlagSet() {
 	// d: alias for -mode=diff ("false")
 	// diff_command: command to run when the formatting mode is diff (default uses the BUILDIFIER_DIFF, BUILDIFIER_MULTIDIFF, and DISPLAY environment variables to create the diff command) ("")
 	// disable_symlink_safety: per default Buildifier will not write to symlinks pointing outside of the Bazel workspace. Setting this to true will disable this behavior ("false")
-	// format: diagnostics format: text or json (default text) ("")
+	// format: diagnostics format: text, json or sarif (default text) ("")
 	// help: print usage information ("false")
 	// lint: lint mode: off, warn, or fix (default off) ("")
 	// mode: formatting mode: check, diff, or fix (default fix) ("")
@@ -256,8 +256,10 @@ func TestValidate(t *testing.T) {
 		"lint fix error":        {options: "--lint=fix --mode=check", wantErr: fmt.Errorf("--lint=fix is only compatible with --mode=fix")},
 		"format mode error":     {options: "--mode=fix --format=text", wantErr: fmt.Errorf("cannot specify --format without --mode=check")},
 		"format text":           {options: "--mode=check --format=text"},
+		"format sarif":          {options: "--mode=check --format=sarif"},
+		"format sarif error":    {options: "--mode=fix --format=sarif", wantErr: fmt.Errorf("cannot specify --format without --mode=check")},
 		"format json":           {options: "--mode=check --format=json"},
-		"format error":          {options: "--mode=check --format=foo", wantErr: fmt.Errorf("unrecognized format foo; valid types are text, json")},
+		"format error":          {options: "--mode=check --format=foo", wantErr: fmt.Errorf("unrecognized format foo; valid types are text, json, sarif")},
 		"type build":            {options: "--type=build"},
 		"type bzl":              {options: "--type=bzl"},
 		"type workspace":        {options: "--type=workspace"},

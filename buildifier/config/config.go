@@ -97,7 +97,7 @@ type Config struct {
 	// repo (for REPO.bazel files), vendor (for VENDOR.bazel files),
 	// or auto (default, based on the filename)
 	InputType string `json:"type,omitempty"`
-	// Format sets the diagnostics format: text or json (default text)
+	// Format sets the diagnostics format: text, json or sarif (default text)
 	Format string `json:"format,omitempty"`
 	// Mode determines the formatting mode: check, diff, or fix (default fix)
 	Mode string `json:"mode,omitempty"`
@@ -179,7 +179,7 @@ func (c *Config) FlagSet(name string, errorHandling flag.ErrorHandling) *flag.Fl
 	flags.BoolVar(&c.Recursive, "r", c.Recursive, "find starlark files recursively")
 	flags.BoolVar(&c.MultiDiff, "multi_diff", c.MultiDiff, "the command specified by the -diff_command flag can diff multiple files in the style of tkdiff (default false)")
 	flags.StringVar(&c.Mode, "mode", c.Mode, "formatting mode: check, diff, or fix (default fix)")
-	flags.StringVar(&c.Format, "format", c.Format, "diagnostics format: text or json (default text)")
+	flags.StringVar(&c.Format, "format", c.Format, "diagnostics format: text, json or sarif (default text)")
 	flags.StringVar(&c.DiffCommand, "diff_command", c.DiffCommand, "command to run when the formatting mode is diff (default uses the BUILDIFIER_DIFF, BUILDIFIER_MULTIDIFF, and DISPLAY environment variables to create the diff command)")
 	flags.StringVar(&c.Lint, "lint", c.Lint, "lint mode: off, warn, or fix (default off)")
 	flags.StringVar(&c.Warnings, "warnings", c.Warnings, "comma-separated warnings used in the lint mode or \"all\"")

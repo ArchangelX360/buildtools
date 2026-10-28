@@ -235,6 +235,23 @@ When the `--format` flag is provided, buildifier always returns `0` unless there
 failures or wrong input parameters, this means the output can be parsed as JSON, and its `success`
 field should be used to determine whether the diagnostics result is positive.
 
+## File diagnostics in SARIF
+
+Buildifier can also emit its findings as a [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
+report, triggered by `--format=sarif` (only works in combination with `--mode=check`). If used in
+combination with `-v`, the output will be indented.
+
+* Every lint warning becomes a result whose `ruleId` is the warning category, with a region
+  (line and column) and level `warning`.
+* A file that is not correctly formatted yields a file-level result (no region) with rule `format`.
+* A file that cannot be parsed yields a result with level `error` and rule `parse-error`.
+
+Example:
+
+```bash
+buildifier --mode=check --lint=warn --format=sarif -r . > buildifier.sarif
+```
+
 ## Symlink Safety
 
 By default, Buildifier will not write to symlinks pointing outside of the Bazel workspace to prevent unintended path traversal.

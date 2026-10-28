@@ -507,7 +507,7 @@ test_lint "all" "--warnings=all" "test_dir/fixed_golden_all.bzl" "$error_docstri
 test_lint "cfg" "--warnings=attr-cfg" "test_dir/fixed_golden_cfg.bzl" "$error_cfg" 0
 test_lint "custom" "--warnings=-bzl-visibility,-integer-division,+unsorted-dict-items" "test_dir/fixed_golden_dict_cfg.bzl" "$error_docstring"$'\n'"$error_dict"$'\n'"$error_cfg" 1
 
-# Test --format=json
+# Test --format=json and --format=sarif
 
 mkdir test_dir/json
 cp test_dir/to_fix.bzl test_dir/json
@@ -658,6 +658,259 @@ cat > golden/json_report_invalid_file_golden <<EOF
 }
 EOF
 
+cat > golden/sarif_report_golden <<'EOF'
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+    "version": "2.1.0",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "buildifier",
+                    "informationUri": "https://github.com/bazel-contrib/buildtools/tree/main/buildifier",
+                    "rules": [
+                        {
+                            "id": "bzl-visibility",
+                            "helpUri": "https://github.com/bazel-contrib/buildtools/blob/main/WARNINGS.md#bzl-visibility"
+                        },
+                        {
+                            "id": "integer-division",
+                            "helpUri": "https://github.com/bazel-contrib/buildtools/blob/main/WARNINGS.md#integer-division"
+                        },
+                        {
+                            "id": "attr-cfg",
+                            "helpUri": "https://github.com/bazel-contrib/buildtools/blob/main/WARNINGS.md#attr-cfg"
+                        },
+                        {
+                            "id": "format",
+                            "shortDescription": {
+                                "text": "The file is not formatted according to buildifier's rules."
+                            }
+                        }
+                    ]
+                }
+            },
+            "columnKind": "unicodeCodePoints",
+            "results": [
+                {
+                    "ruleId": "bzl-visibility",
+                    "ruleIndex": 0,
+                    "level": "warning",
+                    "message": {
+                        "text": "Module \"//foo/bar/internal/baz:module.bzl\" can only be loaded from files located inside \"//foo/bar\", not from \"//json/to_fix.bzl\"."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "to_fix.bzl"
+                                },
+                                "region": {
+                                    "startLine": 1,
+                                    "startColumn": 6,
+                                    "endLine": 1,
+                                    "endColumn": 41
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "integer-division",
+                    "ruleIndex": 1,
+                    "level": "warning",
+                    "message": {
+                        "text": "The \"/\" operator for integer division is deprecated in favor of \"//\"."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "to_fix.bzl"
+                                },
+                                "region": {
+                                    "startLine": 4,
+                                    "startColumn": 5,
+                                    "endLine": 4,
+                                    "endColumn": 10
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "attr-cfg",
+                    "ruleIndex": 2,
+                    "level": "warning",
+                    "message": {
+                        "text": "cfg = \"data\" for attr definitions has no effect and should be removed."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "to_fix.bzl"
+                                },
+                                "region": {
+                                    "startLine": 6,
+                                    "startColumn": 15,
+                                    "endLine": 6,
+                                    "endColumn": 27
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "format",
+                    "ruleIndex": 3,
+                    "level": "warning",
+                    "message": {
+                        "text": "The file needs to be reformatted."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "to_fix_2.bzl"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "format",
+                    "ruleIndex": 3,
+                    "level": "warning",
+                    "message": {
+                        "text": "The file needs to be reformatted."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "to_fix_3.bzl"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+EOF
+
+cat > golden/sarif_report_small_golden <<'EOF'
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+    "version": "2.1.0",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "buildifier",
+                    "informationUri": "https://github.com/bazel-contrib/buildtools/tree/main/buildifier",
+                    "rules": []
+                }
+            },
+            "columnKind": "unicodeCodePoints",
+            "results": []
+        }
+    ]
+}
+EOF
+
+cat > golden/sarif_report_stdin_golden <<'EOF'
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+    "version": "2.1.0",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "buildifier",
+                    "informationUri": "https://github.com/bazel-contrib/buildtools/tree/main/buildifier",
+                    "rules": [
+                        {
+                            "id": "format",
+                            "shortDescription": {
+                                "text": "The file is not formatted according to buildifier's rules."
+                            }
+                        }
+                    ]
+                }
+            },
+            "columnKind": "unicodeCodePoints",
+            "results": [
+                {
+                    "ruleId": "format",
+                    "ruleIndex": 0,
+                    "level": "warning",
+                    "message": {
+                        "text": "The file needs to be reformatted."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "%3Cstdin%3E"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+EOF
+
+cat > golden/sarif_report_invalid_file_golden <<'EOF'
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+    "version": "2.1.0",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "buildifier",
+                    "informationUri": "https://github.com/bazel-contrib/buildtools/tree/main/buildifier",
+                    "rules": [
+                        {
+                            "id": "parse-error",
+                            "shortDescription": {
+                                "text": "The file is not a valid Starlark file."
+                            }
+                        }
+                    ]
+                }
+            },
+            "columnKind": "unicodeCodePoints",
+            "results": [
+                {
+                    "ruleId": "parse-error",
+                    "ruleIndex": 0,
+                    "level": "error",
+                    "message": {
+                        "text": "The file could not be parsed."
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "foo.bar"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+EOF
+
 cd test_dir/json
 
 $buildifier --mode=check --format=json --lint=warn --warnings=-module-docstring -v to_fix.bzl to_fix_2.bzl to_fix_3.bzl to_fix_4.bzl > json_report
@@ -671,6 +924,18 @@ diff -u json_report ../../golden/json_report_stdin_golden || die "$1: wrong cons
 
 $buildifier --mode=check --format=json --lint=warn --warnings=-module-docstring -v to_fix_4.bzl foo.bar > json_report
 diff -u json_report ../../golden/json_report_invalid_file_golden || die "$1: wrong console output for --mode=check --format=json --lint=warn with an invalid file"
+
+$buildifier --mode=check --format=sarif --lint=warn --warnings=-module-docstring -v to_fix.bzl to_fix_2.bzl to_fix_3.bzl to_fix_4.bzl > sarif_report
+diff -u sarif_report ../../golden/sarif_report_golden || die "$1: wrong console output for --mode=check --format=sarif --lint=warn with many files"
+
+$buildifier --mode=check --format=sarif --lint=warn --warnings=-module-docstring -v to_fix_4.bzl > sarif_report
+diff -u sarif_report ../../golden/sarif_report_small_golden || die "$1: wrong console output for --mode=check --format=sarif --lint=warn with a single file"
+
+$buildifier --mode=check --format=sarif --lint=warn --warnings=-module-docstring -v < to_fix_2.bzl > sarif_report
+diff -u sarif_report ../../golden/sarif_report_stdin_golden || die "$1: wrong console output for --mode=check --format=sarif --lint=warn with stdin"
+
+$buildifier --mode=check --format=sarif --lint=warn --warnings=-module-docstring -v to_fix_4.bzl foo.bar > sarif_report
+diff -u sarif_report ../../golden/sarif_report_invalid_file_golden || die "$1: wrong console output for --mode=check --format=sarif --lint=warn with an invalid file"
 
 cd ../..
 

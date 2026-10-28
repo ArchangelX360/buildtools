@@ -40,13 +40,13 @@ func ValidateFormat(format, mode *string) error {
 	case "":
 		return nil
 
-	case "text", "json":
+	case "text", "json", "sarif":
 		if *mode != "check" {
 			return fmt.Errorf("cannot specify --format without --mode=check")
 		}
 
 	default:
-		return fmt.Errorf("unrecognized format %s; valid types are text, json", *format)
+		return fmt.Errorf("unrecognized format %s; valid types are text, json, sarif", *format)
 	}
 	return nil
 }
