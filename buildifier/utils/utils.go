@@ -19,9 +19,7 @@ limitations under the License.
 package utils
 
 import (
-	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -48,46 +46,10 @@ func skip(info os.FileInfo) bool {
 	return info.IsDir() && info.Name() == ".git"
 }
 
-func normalizePathForMatch(value string) string {
-	value = filepath.ToSlash(value)
-	for strings.HasPrefix(value, "./") {
-		value = strings.TrimPrefix(value, "./")
-	}
-	return value
-}
-
-// matchPath uses path.Match syntax, but allows '*' and '?' to match path separators.
-func matchPath(pattern, filename string) (bool, error) {
-	const separatorPlaceholder = "\x00"
-	pattern = strings.ReplaceAll(normalizePathForMatch(pattern), "/", separatorPlaceholder)
-	filename = strings.ReplaceAll(normalizePathForMatch(filename), "/", separatorPlaceholder)
-	return path.Match(pattern, filename)
-}
-
-func isExcluded(filename string, patterns []string) (bool, error) {
-	for _, pattern := range patterns {
-		matched, err := matchPath(pattern, filename)
-		if err != nil {
-			return false, err
-		}
-		if matched {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // ExpandDirectories takes a list of file/directory names and returns a list with file names
 // by traversing each directory recursively and searching for relevant Starlark files. Paths
-// matching any of the optional exclude patterns are skipped. Exclude patterns use path.Match
-// syntax and are matched with slash separators on every platform.
-func ExpandDirectories(args *[]string, excludePatterns ...string) ([]string, error) {
-	for _, pattern := range excludePatterns {
-		if _, err := matchPath(pattern, ""); err != nil {
-			return nil, fmt.Errorf("invalid exclude pattern %q: %w", pattern, err)
-		}
-	}
-
+// that the optional excluder excludes are skipped, without reading excluded directories.
+func ExpandDirectories(args *[]string, excluder *Excluder) ([]string, error) {
 	files := []string{}
 	for _, arg := range *args {
 		info, err := os.Stat(arg)
@@ -99,18 +61,19 @@ func ExpandDirectories(args *[]string, excludePatterns ...string) ([]string, err
 			continue
 		}
 		err = filepath.Walk(arg, func(filename string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			excluded, err := isExcluded(filename, excludePatterns)
-			if err != nil {
-				return err
-			}
-			if info.IsDir() && (skip(info) || excluded) {
-				return filepath.SkipDir
-			}
-			if excluded {
+			// Check exclusions first, so that excluded paths never fail the run,
+			// e.g. when they are unreadable.
+			if excluder.Excluded(filename) {
+				if err == nil && info.IsDir() {
+					return filepath.SkipDir
+				}
 				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if skip(info) {
+				return filepath.SkipDir
 			}
 			if !info.IsDir() && isStarlarkFile(info.Name()) {
 				// Don't traverse into directory symlinks such as bazel-foo.bzl
